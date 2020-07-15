@@ -1,17 +1,49 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <div class='main-container'>
+    <login-form v-for="(value, index) in account" :key='"accont" + index' :id='value.id' :pw='value.pw' />
+    <button class='add-btn' @click='add()'>+</button>
+    </div>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+
+import { mapState, mapMutations, mapActions } from 'vuex'
 
 export default {
   name: 'App',
-  components: {
-    HelloWorld
+
+  components : {
+    loginForm : require('./components/loginForm').default
+  },
+
+  async mounted() {
+    this.INIT()
+    this.$axios.get('http://localhost:8085/')
+
+
+  },
+
+  computed : {
+    ...mapState([
+      'account'
+    ])
+  },
+
+  methods : {
+
+    ...mapMutations([
+      'SAVE', 'INIT'
+    ]),
+
+    ...mapActions([
+      'ADD', 
+    ]),
+
+    add() {
+      this.ADD()
+    }
   }
 }
 </script>
@@ -22,7 +54,20 @@ export default {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  height: 100vh;
+  display:flex;
+  align-items: center;;
+}
+
+.add-btn {
+  width: 24px;
+  height: 24px;
+}
+
+.main-container {
+  display:flex;
+  overflow: auto;
+  overflow-x: auto;
+  align-items: center;;
 }
 </style>
