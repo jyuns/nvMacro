@@ -1,10 +1,13 @@
 <template>
   <div class='login-container'>
-      <p class='login-header'>ID <button @click='del()'>X</button></p>
+      <p class='login-header'>아이디 <button @click='del()'>X</button></p>
       <input type='text' v-model="tempId" :disabled='disabled' />
-      <p>PW</p>
+      <p>비밀번호</p>
       <input type='text' v-model="tempPw" :disabled='disabled' />
+      <p>스토어명</p>
+      <input type='text' v-model="tempStore" :disabled='disabled' />
       <span style='margin-top: 16px;'><button style="width:153px;" @click='check()'>✓</button></span>
+      <span style='margin-top: 16px;'><button style="width:153px;" @click='update()'>업로드</button></span>
   </div>
 </template>
 
@@ -17,7 +20,7 @@ export default {
         return {
             tempId : '',
             tempPw : '',
-
+            tempStore : '',
             disabled : false,
         }       
     },
@@ -25,13 +28,16 @@ export default {
     props : {
         id : String,
         pw : String,
+        store : String,
     },
 
     mounted() {
-        if(this.id) this.disabled=true
+        if(!this.id) return
+        if(this.id) {this.disabled=true}
 
         this.tempId = this.id
         this.tempPw = this.pw
+        this.tempStore = this.store
     },
 
     computed : {
@@ -43,24 +49,37 @@ export default {
     methods : {
 
         ...mapActions([
-            'CHECK', 'DEL'
+            'CHECK', 'DEL', 'UPDATE'
         ]),
 
         async check() {
             if(!this.tempId.length) return
             if(!this.tempPw.length) return
+            if(!this.tempStore.length) return
 
             let result = await this.CHECK({
                 id : this.tempId,
                 pw : this.tempPw,
+                store : this.tempStore
             })
             
             if(result) this.disabled = true
         },
 
+        update() {
+            if(!this.disabled) return
+            
+            this.UPDATE({
+                id : this.tempId,
+                pw : this.tempPw,
+                store : this.tempStore
+            })
+
+        },
+
         del() {
             this.DEL({
-                id : this.id
+                store : this.store
             })
         },
     }
@@ -84,8 +103,8 @@ export default {
 p {
     color:white;
     text-align: left;
-    margin-bottom: 8px;
-    margin-top: 4px!important;
+    margin-bottom: .5em;
+    margin-top: 1rem;
 }
 
 </style>

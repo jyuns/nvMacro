@@ -1,5 +1,6 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import axios from 'axios'
 
 Vue.use(Vuex)
 
@@ -38,12 +39,12 @@ export default new Vuex.Store({
 
     DEL({state, commit}, payload) {
 
-      let id = payload.id
+      let store = payload.store
       let delIndex = null
       let tempAccount = state.account
 
       for(let i = 0 ; i < tempAccount.length; i ++) {
-        if(tempAccount[i].id == id) {delIndex = i; break;}
+        if(tempAccount[i].store == store) {delIndex = i; break;}
       }
       
       if(delIndex == null) return
@@ -54,17 +55,31 @@ export default new Vuex.Store({
       commit('SAVE')
     },
 
-    CHECK({state, commit}, payload) {
-      let tempAccount = state.account
-      let delIndex = null
+    async CHECK({state, commit}, payload) {
 
       let id = payload.id
       let pw = payload.pw
+      let store = payload.store
+
+      try {
+        await axios.post('http://localhost:8085/login', {
+          id : id,
+          pw : pw,
+          store : store,
+        })
+        alert('로그인 성공')
+      } catch{
+        return alert('로그인 실패')
+      }
+      
+
+      let tempAccount = state.account
+      let delIndex = null
     
       if(tempAccount == '') state.account = []
 
       for(let i = 0 ; i < tempAccount.length; i ++) {
-        if(tempAccount[i].id == id) {delIndex = i; break;}
+        if(tempAccount[i].store == store) {delIndex = i; break;}
       }
       
       if(delIndex != null) return false
@@ -72,10 +87,25 @@ export default new Vuex.Store({
       state.account.push({
         id : id,
         pw : pw,
+        store : store,
       })
       commit('SAVE')
 
       return true
-    }
+    },
+
+    async UPDATE({state}, payload) {
+      state
+      let id = payload.id
+      let pw = payload.pw
+      let store = payload.store
+
+      await axios.post('http://localhost:8085/updateInvoice', {
+        id : id,
+        pw : pw,
+        store : store,
+      })
+
+    },
   },
 })

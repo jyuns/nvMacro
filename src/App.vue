@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <div class='main-container'>
-    <login-form v-for="(value, index) in account" :key='"accont" + index' :id='value.id' :pw='value.pw' />
+    <login-form v-for="(value, index) in account" :key='"accont" + index' :id='value.id' :pw='value.pw' :store='value.store' />
     <button class='add-btn' @click='add()'>+</button>
     </div>
   </div>
@@ -21,8 +21,6 @@ export default {
   async mounted() {
     this.INIT()
     this.$axios.get('http://localhost:8085/')
-
-
   },
 
   computed : {
