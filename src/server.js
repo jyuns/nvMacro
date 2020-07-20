@@ -13,7 +13,15 @@ nodeApp.use(bodyParser.urlencoded({limit:'100mb', extended:true}))
 const homedir = require('os').homedir();
 const axios = require('axios')
 
+axios.defaults.headers.common["User-Agent"] = "Mozila/5.0"
+
 console.log(homedir)
+
+const sleep = (ms) => {
+    return new Promise(resolve=>{
+        setTimeout(resolve,ms)
+    })
+}
 
 nodeApp.post('/login', async (req, res) => {
 
@@ -21,7 +29,7 @@ nodeApp.post('/login', async (req, res) => {
     let pw = req.body.pw
 
     const browser = await puppeteer.launch({
-        executablePath:'/Users/jyuns/Desktop/Chromium.app/Contents/MacOS/Chromium',
+        executablePath: homedir + '/Desktop/chrome.exe'
     });
 
     const page = await browser.newPage();
@@ -47,7 +55,7 @@ nodeApp.post('/login', async (req, res) => {
     }
 })
 
-nodeApp.post('/updateInvoice', async (req, res) => {
+nodeApp.post('/getInvoice', async (req, res) => {
 
     let id = req.body.id
     let pw = req.body.pw
@@ -72,23 +80,57 @@ nodeApp.post('/updateInvoice', async (req, res) => {
 
     await page.click('#loginButton')
 
-    await page.waitForSelector('.store', {timeout:3000})
+    await page.waitForSelector('.store', {timeout:5000})
 
     // change store if diff
+    let currentStore = await page.evaluate( async () => {
+        let el = await document.querySelector('.store').innerText
+        return el
+    })
 
+    currentStore = currentStore.split(' ').join('')
 
+    if(currentStore != store) {
+        await page.click('.fn-down2')
+        
+        await page.waitForSelector('.select-area', {timeout:5000})
+
+        let storeIndex = await page.evaluate( async ({store}) => {
+            let el = await document.querySelectorAll('.text-title')
+            
+            let tempStoreIndex = Number()
+            
+            for(let i = 0; i < el.length; i++ ) {
+                let elRegex = el[i].innerText.replace('스마트스토어', '')
+                elRegex = elRegex.split(' ').join('')
+                if(elRegex == store) {
+                    tempStoreIndex = i;
+                    break;
+                }
+            }
+
+            return tempStoreIndex
+
+        }, {store})
+
+        await page.evaluate( async ({storeIndex}) => {
+            let selectStore = await document.querySelectorAll('input[name=store-login]')[storeIndex]
+            selectStore.click()
+        }, {storeIndex})
+
+        await page.waitForSelector('.store', {timeout:5000})
+    }
 
     // get store id
-/**
-    let cookies =  await page.cookies()    
-    let tempStoreId = await axios.get('https://sell.smartstore.naver.com/api/login/validate/address-book', 
+    await page.waitFor(5000)
+    let cookies = await page.cookies()
     
-    {
-        headers : {
-            'User-Agent' : 'Mozila/5.0',
-            Cookie : cookies[0].name + '=' + cookies[0].value + ';' + cookies[1].name + '=' + cookies[1].value + ';'
-        }
-    })
+    let tempStoreId = await axios.get('https://sell.smartstore.naver.com/api/login/validate/address-book', 
+                                        {
+                                            headers : {
+                                                Cookie : cookies[0].name + '=' + cookies[0].value + ';' + cookies[1].name + '=' + cookies[1].value + ';'
+                                            }
+                                        })
 
     let storeId = tempStoreId.headers.user.split(':').pop()
 
@@ -103,109 +145,68 @@ nodeApp.post('/updateInvoice', async (req, res) => {
         'summaryInfoType' : 'DELIVERING'
     }
 
-
     let tempInvoiceList = await axios.post('https://sell.smartstore.naver.com/o/v3/graphql', {
         'operationName' : operationName,
         'query' : query,
         'variables' : variables,
     }, {
-
         headers : {
-            'User-Agent' : 'Mozila/5.0',
             Cookie : cookies[0].name + '=' + cookies[0].value + ';' + cookies[1].name + '=' + cookies[1].value + ';'
         },
     })
 
     let invoiceList = tempInvoiceList.data.data.deliveryStatusListMp.elements
 
-    console.log(invoiceList) */
-    
-/**
 
-    const { GoogleSpreadsheet } = require('google-spreadsheet');
+    res.json({
+        invoiceList : invoiceList,
+        cookies : cookies,
+    })
+})
 
-    // spreadsheet key is the long id in the sheets URL
-    const doc = new GoogleSpreadsheet('1BPE-mtjv7VoNmi_4aevyPLdq0xZC6Y8lyNUa_bQBwzk');
-    
-    //doc.useApiKey('AIzaSyBl7mAaokdmAq8R2MkiK9YGLWMBBv99D-U');
-    await doc.useServiceAccountAuth(require('./crew30-a4b6e6cdd464.json'));
-    await doc.loadInfo(); // loads document properties and worksheets
-    
-    const sheet = await doc.sheetsByIndex[4] ; // or use doc.sheetsById[id]
-    const rows = await sheet.getRows()
-    let test = 0 
+nodeApp.post('/updateInvoice', async (req, res) => {
 
-    const result = await rows.find(r => r._rawData[5] === '28000059576470')
-    console.log(result._rawData[18])
-    test ++
-    console.log(test) */
+    let pdNum = req.body.productNum
+    let inNum = req.body.invoiceNum
+    let cookies = req.body.cookies
     
-    //const rows = await sheet.getRows()
-    //const resultRow = rows.find(r => r.name === "결제일")
+    let shipType = ''
 
-    
+    let cj1 = new RegExp('^6')
+    let cj2 = new RegExp('^3')
+    let ky = new RegExp('^2')
+    let ci1 = new RegExp('^5')
+    let ci2 = new RegExp('^1')
 
-/**
- *     page.goto('https://sell.smartstore.naver.com/#/naverpay/sale/delivery/situation?summaryInfoType=DELIVERING')
-    let cookies =  await page.cookies()
+    if(cj1.exec(inNum) != null) shipType = 'CJGLS'
+    if(cj2.exec(inNum) != null) shipType = 'CJGLS'
+    if(ky.exec(inNum) != null) shipType = 'KUNYOUNG'
+    if(ci1.exec(inNum) != null) shipType = 'CHUNIL'
+    if(ci2.exec(inNum) != null) shipType = 'CHUNIL'
+
+    if(shipType == '') res.send('실패')
 
     let param = new URLSearchParams()
 
-    param.append('dispatchForms[0].productOrderId', '2020060851382681')
+    param.append('dispatchForms[0].productOrderId', pdNum)
     param.append('dispatchForms[0].deliveryMethodType', 'DELIVERY')
-    param.append('dispatchForms[0].deliveryCompanyCode', 'CJGLS')
-    param.append('dispatchForms[0].invoicingNo', '631981763431')
+    param.append('dispatchForms[0].deliveryCompanyCode', shipType)
+    param.append('dispatchForms[0].invoicingNo', inNum)
     param.append('dispatchForms[0].searchOrderStatusType', 'DELIVERING')
     param.append('onlyValidation', 'true')
     param.append('validationSuccess', 'true')
 
-    
-    axios.defaults.headers.common["User-Agent"] = "Mozila/5.0"
-    let result = await axios.post('https://sell.smartstore.naver.com/o/sale/delivery/update2', param, {
-        headers : {
-            Cookie : cookies[0].name + '=' + cookies[0].value + ';' + cookies[1].name + '=' + cookies[1].value + ';'
-        }
-    })
-    
-    console.log(result)
- */    
-
-
-//  
-//    let bodyHTML = await page.evaluate( async () => await document.body.innerHTML);
-//    return res.send(bodyHTML)
-    
-
-
-/**
- * 
- * 
- * 
- *     await page.waitForSelector('.npay_board_area ')
-    await page.evaluate( async () => {
-        console.log(await document.querySelectorAll('_4LshyCrDpi'))
-    })
-
-    let cookies =  await page.cookies()
-    
-    let tempResponse = await axios.get('https://sell.smartstore.naver.com/api/login/validate/address-book', 
-    {
-
-        headers : {
-            'User-Agent' : 'Mozila/5.0',
-            Cookie : cookies[0].name + '=' + cookies[0].value + ';' + cookies[1].name + '=' + cookies[1].value + ';'
-        }
-    })
-
-    console.log(tempResponse)
-
-
- */
-
-/**
- *     
- */
-
+    try {
+        let result = await axios.post('https://sell.smartstore.naver.com/o/sale/delivery/update2', param, {
+            headers : {
+                Cookie : cookies[0].name + '=' + cookies[0].value + ';' + cookies[1].name + '=' + cookies[1].value + ';'
+            }
+        })
+        console.log(result)
+        res.send('성공')
+    } catch {
+        res.send('실패')
+    }
 })
 
 

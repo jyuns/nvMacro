@@ -20,7 +20,6 @@ export default {
 
   async mounted() {
     this.INIT()
-    this.$axios.get('http://localhost:8085/')
   },
 
   computed : {
