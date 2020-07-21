@@ -18,7 +18,7 @@ export default {
     loginForm : require('./components/loginForm').default
   },
 
-  async mounted() {
+  mounted() {
     this.INIT()
   },
 

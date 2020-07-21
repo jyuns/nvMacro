@@ -79,7 +79,7 @@ export default {
 
         del() {
             this.DEL({
-                store : this.store
+                store : this.tempStore
             })
         },
     }

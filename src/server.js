@@ -15,21 +15,13 @@ const axios = require('axios')
 
 axios.defaults.headers.common["User-Agent"] = "Mozila/5.0"
 
-console.log(homedir)
-
-const sleep = (ms) => {
-    return new Promise(resolve=>{
-        setTimeout(resolve,ms)
-    })
-}
-
 nodeApp.post('/login', async (req, res) => {
 
     let id = req.body.id
     let pw = req.body.pw
 
     const browser = await puppeteer.launch({
-        executablePath: homedir + '/Desktop/chrome.exe'
+        executablePath: homedir + '\\Desktop\\chrome-win\\chrome.exe'
     });
 
     const page = await browser.newPage();
@@ -55,6 +47,7 @@ nodeApp.post('/login', async (req, res) => {
     }
 })
 
+
 nodeApp.post('/getInvoice', async (req, res) => {
 
     let id = req.body.id
@@ -62,8 +55,7 @@ nodeApp.post('/getInvoice', async (req, res) => {
     let store = req.body.store
 
     const browser = await puppeteer.launch({
-        headless:false,
-        executablePath:'/Users/jyuns/Desktop/Chromium.app/Contents/MacOS/Chromium',
+        executablePath: homedir + '\\Desktop\\chrome-win\\chrome.exe'
     });
 
     const page = await browser.newPage();
